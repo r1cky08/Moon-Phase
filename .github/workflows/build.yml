@@ -9,6 +9,8 @@ permissions:
   id-token: write
 jobs:
   apk:
+    # Android is paused: builds only when started by hand
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,13 +39,17 @@ jobs:
         run: gh release create "build-$GITHUB_RUN_NUMBER" HighlanderMoon.apk --title "Build $GITHUB_RUN_NUMBER" --notes "Highlander Moon" --latest
   web:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: web }
+  deploy:
+    needs: web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4

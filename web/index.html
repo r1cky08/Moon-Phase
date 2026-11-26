@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Moon">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
-<title>Highlander Moon</title>
+<title>Moon Phase</title>
 <style>
 :root{--bg:#0a0b0d;--card:#15171b;--line:#24272d;--tx:#eef1f5;--dim:#8c939e;--ac:#4a8fe0}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -30,8 +30,7 @@ main{flex:1}
 #status{display:inline-block;font-size:14px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:6px 14px;margin-bottom:4px}
 #status.up{color:var(--tx);border-color:var(--ac);box-shadow:0 0 18px -6px var(--ac)}
 .rs{font-size:17px;line-height:1.5}.rs span{display:inline-block;width:52px;font-size:12px;color:var(--dim)}
-.word{letter-spacing:.55em;font-size:13px;color:#c3c9d2;padding:14px 0 4px .55em;background:radial-gradient(ellipse at 50% 100%,rgba(74,143,224,.35),transparent 70%)}
-.step{display:flex;justify-content:center;gap:8px;margin-top:10px}
+.step{display:flex;justify-content:center;gap:8px;margin-top:14px}
 #side{display:grid;gap:12px;align-content:start}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .k{font-size:11px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
@@ -64,7 +63,6 @@ nav{display:flex;justify-content:center;gap:8px;position:sticky;bottom:0;padding
  <div id="hero" class="card">
   <canvas id="moon" width="600" height="600" role="img"></canvas>
   <div id="pct"></div><div id="name"></div><div id="status"></div>
-  <div class="word">HIGHLANDER</div>
   <div class="step"><button data-d="-1" aria-label="Previous day">&#8249; Day</button><button data-d="1" aria-label="Next day">Day &#8250;</button></div>
  </div>
  <div id="side">
