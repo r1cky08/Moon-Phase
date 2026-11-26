@@ -26,7 +26,10 @@ main{flex:1}
 #moon{width:min(70vw,300px);aspect-ratio:1;display:block;margin:6px auto;filter:drop-shadow(0 0 34px rgba(74,143,224,.35))}
 #pct{font-size:72px;font-weight:200;line-height:1;background:linear-gradient(#fff,#9aa3af);-webkit-background-clip:text;background-clip:text;color:transparent}
 #pct small{font-size:24px}
-#name{font-size:22px;margin:4px 0 10px}
+#name{font-size:22px;margin:4px 0 6px}
+#status{display:inline-block;font-size:14px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:6px 14px;margin-bottom:4px}
+#status.up{color:var(--tx);border-color:var(--ac);box-shadow:0 0 18px -6px var(--ac)}
+.rs{font-size:17px;line-height:1.5}.rs span{display:inline-block;width:52px;font-size:12px;color:var(--dim)}
 .word{letter-spacing:.55em;font-size:13px;color:#c3c9d2;padding:14px 0 4px .55em;background:radial-gradient(ellipse at 50% 100%,rgba(74,143,224,.35),transparent 70%)}
 .step{display:flex;justify-content:center;gap:8px;margin-top:10px}
 #side{display:grid;gap:12px;align-content:start}
@@ -47,7 +50,7 @@ nav{display:flex;justify-content:center;gap:8px;position:sticky;bottom:0;padding
 @media (min-width:900px) and (orientation:landscape){
  #app{height:100vh;min-height:620px}
  #today{grid-template-columns:480px 1fr;height:100%}
- #moon{width:min(300px,40vh)}
+ #moon{width:min(280px,37vh)}
  #app{padding:10px 14px;gap:8px}#side{gap:8px}.stats{gap:8px}.stats .card{padding:11px 18px}#side .row{padding:7px 0}nav{padding:2px 0}
  #grid canvas{width:30px;height:30px}#grid button{min-height:62px}
 }
@@ -60,7 +63,7 @@ nav{display:flex;justify-content:center;gap:8px;position:sticky;bottom:0;padding
 <section id="today">
  <div id="hero" class="card">
   <canvas id="moon" width="600" height="600" role="img"></canvas>
-  <div id="pct"></div><div id="name"></div>
+  <div id="pct"></div><div id="name"></div><div id="status"></div>
   <div class="word">HIGHLANDER</div>
   <div class="step"><button data-d="-1" aria-label="Previous day">&#8249; Day</button><button data-d="1" aria-label="Next day">Day &#8250;</button></div>
  </div>
@@ -126,13 +129,32 @@ function altitude(ms){const{l,b,km,e}=position(ms);
  const dec=Math.asin(sin(b)*cos(e)+cos(b)*sin(e)*sin(l))/R;
  const H=mod(280.46061837+360.98564736629*(jd(ms)-2451545)+LON-ra);
  return Math.asin(sin(LAT)*sin(dec)+cos(LAT)*cos(dec)*cos(H))/R-(.7275*Math.asin(6378.14/km)/R-.5667)}
+function cross(a,b){const up=altitude(b)>=0;while(b-a>1000){const m=(a+b)/2;if((altitude(m)>=0)===up)b=m;else a=m}return b}
 function riseSet(d){
  const a=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),b=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).getTime();
  let rise=null,set=null,p=altitude(a);
  for(let t=a+6e5;t<=b;t+=6e5){const h=altitude(t);
-  if((p<0)!==(h<0)){const x=t-6e5+6e5*p/(p-h);if(h>=0)rise=x;else set=x}p=h}
+  if((p<0)!==(h<0)){const x=cross(t-6e5,t);if(h>=0)rise=x;else set=x}p=h}
  return{rise,set}}
 
+function look(ms){const{l,b,km,e}=position(ms);
+ const ra=Math.atan2(sin(l)*cos(e)-Math.tan(b*R)*sin(e),cos(l))/R;
+ const dec=Math.asin(sin(b)*cos(e)+cos(b)*sin(e)*sin(l))/R;
+ const H=mod(280.46061837+360.98564736629*(jd(ms)-2451545)+LON-ra);
+ const g=Math.asin(sin(LAT)*sin(dec)+cos(LAT)*cos(dec)*cos(H))/R;
+ const az=mod(Math.atan2(sin(H),cos(H)*sin(LAT)-Math.tan(dec*R)*cos(LAT))/R+180);
+ return{alt:g-Math.asin(6378.14/km)/R*cos(g),az}}
+const DIRS=['north','northeast','east','southeast','south','southwest','west','northwest'];
+/* first time after "from" that the moon crosses the horizon */
+function nextCross(from){let p=altitude(from);
+ for(let t=from+6e5;t<=from+2*DAY;t+=6e5){const h=altitude(t);
+  if((p<0)!==(h<0))return{t:cross(t-6e5,t),rise:h>=0};p=h}return null}
+/* first highest point after "from" */
+function nextPeak(from){let a=look(from-6e5).alt,b=look(from).alt;
+ for(let t=from+6e5;t<=from+2*DAY;t+=6e5){const c=look(t).alt;
+  if(b>=a&&b>c){let best=t-6e5;for(let u=t-12e5;u<=t;u+=6e4)if(look(u).alt>look(best).alt)best=u;
+   if(best>=from)return{t:best,...look(best)}}
+  a=b;b=c}return null}
 const NAMES=['New Moon','First Quarter','Full Moon','Last Quarter'],BETWEEN=['Waxing Crescent','Waxing Gibbous','Waning Gibbous','Waning Crescent'];
 const FULL=['Wolf','Snow','Worm','Pink','Flower','Strawberry','Buck','Sturgeon','Corn',"Hunter's",'Beaver','Cold'];
 const start=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
@@ -180,6 +202,9 @@ const isToday=d=>start(d)===start(new Date());
 const time=t=>t?new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'None';
 const md=t=>new Date(t).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
 function inDays(t){const n=Math.round((start(new Date(t))-start(new Date()))/DAY);return n===0?'Today':n===1?'Tomorrow':n>0?'In '+n+' days':-n+' days ago'}
+function dayWord(t){const n=Math.round((start(new Date(t))-start(new Date()))/DAY);
+ return n===0?'Today':n===1?'Tomorrow':n===-1?'Yesterday':md(t)}
+function when(t){const w=dayWord(t);return w==='Today'?time(t):w.toLowerCase()==='tomorrow'?time(t)+' tomorrow':time(t)+', '+md(t)}
 function label(e){return e.q===2?'Full '+FULL[new Date(e.t).getMonth()]+' Moon':NAMES[e.q]}
 function row(e){const b=document.createElement('button');b.className='row';
  b.innerHTML='<canvas width="68" height="68"></canvas><span>'+label(e)+'<div class="s">'+md(e.t)+' at '+time(e.t)+'</div></span><span class="s">'+inDays(e.t)+'</span>';
@@ -190,9 +215,14 @@ function renderToday(){
  const k=illum(at);draw($('#moon'),k,waxing(at));
  $('#pct').innerHTML=Math.round(k*100)+'<small>% lit</small>';$('#name').textContent=phaseName(sel);
  $('#moon').setAttribute('aria-label',phaseName(sel));
+ const st=$('#status');st.hidden=!isToday(sel);
+ if(!st.hidden){const up=altitude(at)>=0,c=nextCross(at);st.classList.toggle('up',up);
+  st.textContent=(up?'Up now':'Below the horizon')+(c?', '+(c.rise?'rises ':'sets ')+when(c.t):'')}
+ // today: the next high point from now. other days: the one that follows noon that day
+ const pk=nextPeak(isToday(sel)?at:new Date(sel.getFullYear(),sel.getMonth(),sel.getDate(),12).getTime());
  const rs=riseSet(sel),news=events(at-32*DAY,at).filter(e=>e.q===0).pop(),fut=events(at,at+40*DAY),full=fut.find(e=>e.q===2);
  const mi=Math.round(position(at).km*.621371/100)*100;
- $('#stats').innerHTML=[['Moonrise',time(rs.rise),''],['Moonset',time(rs.set),''],['Moon age',((at-news.t)/DAY).toFixed(1)+' days','since new moon'],['Distance',mi.toLocaleString()+' mi',position(at).km<362000?'near perigee':position(at).km>401000?'near apogee':''],['Next full',md(full.t),inDays(full.t)],['Next new',md(fut.find(e=>e.q===0).t),inDays(fut.find(e=>e.q===0).t)]]
+ $('#stats').innerHTML=[['Highest in the sky',pk?time(pk.t):'None',pk?(pk.alt<0?'Stays below the horizon':dayWord(pk.t)+', '+DIRS[Math.round(pk.az/45)%8]+', '+Math.round(pk.alt)+'\u00b0 up'):''],['Rise and set','<div class="rs"><span>Rises</span>'+time(rs.rise)+'<br><span>Sets</span>'+time(rs.set)+'</div>',''],['Moon age',((at-news.t)/DAY).toFixed(1)+' days','since new moon'],['Distance',mi.toLocaleString()+' mi',position(at).km<362000?'near perigee':position(at).km>401000?'near apogee':''],['Next full',md(full.t),inDays(full.t)],['Next new',md(fut.find(e=>e.q===0).t),inDays(fut.find(e=>e.q===0).t)]]
   .map(([a,b,c])=>'<div class="card"><div class="k">'+a+'</div><div class="v">'+b+'</div><div class="s">'+c+'</div></div>').join('');
  $('#next').replaceChildren(...events(at,at+31*DAY).slice(0,4).map(row));
 }
@@ -236,7 +266,7 @@ show('today');
 if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js');
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){const t=start(new Date());if(t!==last&&start(sel)===last)sel=new Date();last=t;render()}});
 let last=start(new Date());
-setInterval(()=>{const t=start(new Date());if(t!==last){if(start(sel)===last)sel=new Date();last=t;render()}else if(view==='today'&&isToday(sel))render()},6e5);
+setInterval(()=>{const t=start(new Date());if(t!==last){if(start(sel)===last)sel=new Date();last=t;render()}else if(view==='today'&&isToday(sel))render()},6e4);
 </script>
 </body>
 </html>
