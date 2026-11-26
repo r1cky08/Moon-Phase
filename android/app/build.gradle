@@ -1,0 +1,30 @@
+plugins { id 'com.android.application' }
+
+def keystore = System.getenv('SIGNING_KEYSTORE_FILE')
+
+android {
+    namespace 'com.rick.highlandermoon'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.rick.highlandermoon'
+        minSdk 24
+        targetSdk 34
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int)
+        versionName "1.${System.getenv('GITHUB_RUN_NUMBER') ?: '0'}"
+    }
+    signingConfigs {
+        if (keystore) {
+            release {
+                storeFile file(keystore)
+                storePassword System.getenv('SIGNING_PASSWORD')
+                keyAlias System.getenv('SIGNING_ALIAS')
+                keyPassword System.getenv('SIGNING_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release { signingConfig keystore ? signingConfigs.release : signingConfigs.debug }
+    }
+    // the app ships the same files as the web version
+    sourceSets { main { assets.srcDirs = ['../../web'] } }
+}

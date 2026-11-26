@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0b0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Moon">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Highlander Moon</title>
+<style>
+:root{--bg:#0a0b0d;--card:#15171b;--line:#24272d;--tx:#eef1f5;--dim:#8c939e;--ac:#4a8fe0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% -10%,#14171d,var(--bg) 60%) fixed,var(--bg);color:var(--tx);font-family:Roboto,system-ui,sans-serif;min-height:100vh}
+button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:999px;cursor:pointer;min-height:44px;padding:0 18px}
+button.on{border-color:var(--ac);box-shadow:0 0 18px -4px var(--ac)}
+#app{max-width:1280px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(14px + env(safe-area-inset-left));display:flex;flex-direction:column;gap:12px;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#date{font-size:18px}#place{font:12px Roboto,system-ui,sans-serif;color:var(--dim);background:none;border:0;padding:4px 0;min-height:28px}#place option{background:var(--card)}
+main{flex:1}
+.card{background:linear-gradient(160deg,#181b20,#111316);border:1px solid var(--line);border-radius:22px;padding:18px}
+#today{display:grid;gap:12px;grid-template-columns:1fr}
+#hero{text-align:center;position:relative;overflow:hidden}
+#moon{width:min(70vw,300px);aspect-ratio:1;display:block;margin:6px auto;filter:drop-shadow(0 0 34px rgba(74,143,224,.35))}
+#pct{font-size:72px;font-weight:200;line-height:1;background:linear-gradient(#fff,#9aa3af);-webkit-background-clip:text;background-clip:text;color:transparent}
+#pct small{font-size:24px}
+#name{font-size:22px;margin:4px 0 10px}
+.word{letter-spacing:.55em;font-size:13px;color:#c3c9d2;padding:14px 0 4px .55em;background:radial-gradient(ellipse at 50% 100%,rgba(74,143,224,.35),transparent 70%)}
+.step{display:flex;justify-content:center;gap:8px;margin-top:10px}
+#side{display:grid;gap:12px;align-content:start}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.k{font-size:11px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+.v{font-size:26px;font-weight:300;margin-top:4px}
+.s{font-size:12px;color:var(--dim)}
+.row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-width:0 0 1px;border-radius:0;text-align:left}
+.row:last-child{border:0}.row span:nth-child(2){flex:1}.row canvas{width:34px;height:34px}
+#grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
+#grid button{border-radius:12px;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;min-width:0}
+#grid canvas{width:min(100%,34px);aspect-ratio:1}
+#grid .key{background:#1b2636}
+.dow{text-align:center;font-size:11px;color:var(--dim)}
+.mh{display:flex;justify-content:space-between;align-items:center}
+nav{display:flex;justify-content:center;gap:8px;position:sticky;bottom:0;padding:8px 0;background:linear-gradient(transparent,var(--bg) 40%)}
+[hidden]{display:none!important}
+@media (min-width:900px) and (orientation:landscape){
+ #app{height:100vh;min-height:620px}
+ #today{grid-template-columns:480px 1fr;height:100%}
+ #moon{width:min(300px,40vh)}
+ #app{padding:10px 14px;gap:8px}#side{gap:8px}.stats{gap:8px}.stats .card{padding:11px 18px}#side .row{padding:7px 0}nav{padding:2px 0}
+ #grid canvas{width:30px;height:30px}#grid button{min-height:62px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header><div><div id="date"></div><select id="place" aria-label="Location for moonrise and moonset"></select></div><button id="now">Today</button></header>
+<main>
+<section id="today">
+ <div id="hero" class="card">
+  <canvas id="moon" width="600" height="600" role="img"></canvas>
+  <div id="pct"></div><div id="name"></div>
+  <div class="word">HIGHLANDER</div>
+  <div class="step"><button data-d="-1" aria-label="Previous day">&#8249; Day</button><button data-d="1" aria-label="Next day">Day &#8250;</button></div>
+ </div>
+ <div id="side">
+  <div class="stats" id="stats"></div>
+  <div class="card"><div class="k">Coming up</div><div id="next"></div></div>
+ </div>
+</section>
+<section id="cal" class="card" hidden>
+ <div class="mh"><button data-m="-1" aria-label="Previous month">&#8249;</button><div id="month" class="v"></div><button data-m="1" aria-label="Next month">&#8250;</button></div>
+ <div id="grid"></div>
+</section>
+<section id="list" class="card" hidden><div class="k">Next 12 months of full and new moons</div><div id="year"></div></section>
+</main>
+<nav><button data-v="today" class="on">Tonight</button><button data-v="cal">Calendar</button><button data-v="list">Year</button></nav>
+</div>
+<script>
+// moonrise and moonset depend on the place; times show in the device's time zone
+const PLACES=[['Pueblo, CO',38.2544,-104.6091],['Colorado Springs, CO',38.8339,-104.8214],['Denver, CO',39.7392,-104.9903],['Albuquerque, NM',35.0844,-106.6504],['Phoenix, AZ',33.4484,-112.074],['Las Vegas, NV',36.1699,-115.1398],['Los Angeles, CA',34.0522,-118.2437],['Seattle, WA',47.6062,-122.3321],['Salt Lake City, UT',40.7608,-111.891],['Dallas, TX',32.7767,-96.797],['Chicago, IL',41.8781,-87.6298],['Atlanta, GA',33.749,-84.388],['New York, NY',40.7128,-74.006]];
+let LAT=PLACES[0][1],LON=PLACES[0][2];
+const R=Math.PI/180,DAY=864e5;
+const sin=d=>Math.sin(d*R),cos=d=>Math.cos(d*R),mod=a=>((a%360)+360)%360;
+const jd=ms=>ms/DAY+2440587.5;
+/* Exact quarter-phase times (Meeus, Astronomical Algorithms ch. 49). q: 0 new,1 first,2 full,3 last */
+function phaseTime(k){
+ const q=Math.round(mod(k*360)/90)%4,T=k/1236.85;
+ let J=2451550.09766+29.530588861*k+.00015437*T*T-.00000015*T*T*T;
+ const E=1-.002516*T-.0000074*T*T,M=2.5534+29.1053567*k-.0000014*T*T,
+ P=201.5643+385.81693528*k+.0107582*T*T,F=160.7108+390.67050284*k-.0016118*T*T,O=124.7746-1.56375588*k+.0020672*T*T;
+ let t; // [coef, E power, M, M', F]
+ if(q===0||q===2){
+  const n=q===0;
+  t=[[n?-.4072:-.40614,0,0,1,0],[n?.17241:.17302,1,1,0,0],[n?.01608:.01614,0,0,2,0],[n?.01039:.01043,0,0,0,2],[n?.00739:.00734,1,-1,1,0],[n?-.00514:-.00515,1,1,1,0],[n?.00208:.00209,2,2,0,0],[-.00111,0,0,1,-2],[-.00057,0,0,1,2],[.00056,1,1,2,0],[-.00042,0,0,3,0],[.00042,1,1,0,2],[.00038,1,1,0,-2],[-.00024,1,-1,2,0]];
+ }else{
+  t=[[-.62801,0,0,1,0],[.17172,1,1,0,0],[-.01183,1,1,1,0],[.00862,0,0,2,0],[.00804,0,0,0,2],[.00454,1,-1,1,0],[.00204,2,2,0,0],[-.0018,0,0,1,-2],[-.0007,0,0,1,2],[-.0004,0,0,3,0],[-.00034,1,-1,2,0],[.00032,1,1,0,2],[.00032,1,1,0,-2],[-.00028,2,2,1,0],[.00027,1,1,2,0]];
+  const W=.00306-.00038*E*cos(M)+.00026*cos(P)-.00002*cos(P-M)+.00002*cos(P+M)+.00002*cos(2*F);
+  J+=q===1?W:-W;
+ }
+ for(const[c,e,a,b,f]of t)J+=c*E**e*sin(a*M+b*P+f*F);
+ J-=.00017*sin(O);
+ const A=[[.000325,299.77,.107408],[.000165,251.88,.016321],[.000164,251.83,26.651886],[.000126,349.42,36.412478],[.00011,84.66,18.206239]];
+ for(const[c,a,b]of A)J+=c*sin(a+b*k);
+ return {t:(J-2440587.5)*DAY-69000,q};
+}
+function events(from,to){
+ let k=Math.floor(((jd(from)-2451550.1)/29.530588861)*4-2)/4,out=[];
+ for(;;k+=.25){const e=phaseTime(k);if(e.t>to)break;if(e.t>=from)out.push(e)}
+ return out;
+}
+function args(ms){const T=(jd(ms)-2451545)/36525;return{T,
+ L:218.3164477+481267.88123421*T,D:297.8501921+445267.1114034*T,M:357.5291092+35999.0502909*T,
+ P:134.9633964+477198.8675055*T,F:93.272095+483202.0175233*T}}
+function illum(ms){const{D,M,P}=args(ms);
+ const i=180-mod(D)-6.289*sin(P)+2.1*sin(M)-1.274*sin(2*D-P)-.658*sin(2*D)-.214*sin(2*P)-.11*sin(D);
+ return(1+cos(i))/2}
+function position(ms){const{T,L,D,M,P,F}=args(ms);
+ const l=L+6.289*sin(P)+1.274*sin(2*D-P)+.658*sin(2*D)+.214*sin(2*P)-.186*sin(M)-.114*sin(2*F)+.059*sin(2*D-2*P)+.057*sin(2*D-M-P)+.053*sin(2*D+P)+.046*sin(2*D-M);
+ const b=5.128*sin(F)+.281*sin(P+F)+.278*sin(P-F)+.173*sin(2*D-F)+.055*sin(2*D-P+F)+.046*sin(2*D-P-F);
+ const km=385000.56-20905*cos(P)-3699*cos(2*D-P)-2956*cos(2*D)-570*cos(2*P);
+ return{l,b,km,e:23.4393-.013*T}}
+function altitude(ms){const{l,b,km,e}=position(ms);
+ const ra=Math.atan2(sin(l)*cos(e)-Math.tan(b*R)*sin(e),cos(l))/R;
+ const dec=Math.asin(sin(b)*cos(e)+cos(b)*sin(e)*sin(l))/R;
+ const H=mod(280.46061837+360.98564736629*(jd(ms)-2451545)+LON-ra);
+ return Math.asin(sin(LAT)*sin(dec)+cos(LAT)*cos(dec)*cos(H))/R-(.7275*Math.asin(6378.14/km)/R-.5667)}
+function riseSet(d){
+ const a=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),b=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).getTime();
+ let rise=null,set=null,p=altitude(a);
+ for(let t=a+6e5;t<=b;t+=6e5){const h=altitude(t);
+  if((p<0)!==(h<0)){const x=t-6e5+6e5*p/(p-h);if(h>=0)rise=x;else set=x}p=h}
+ return{rise,set}}
+
+const NAMES=['New Moon','First Quarter','Full Moon','Last Quarter'],BETWEEN=['Waxing Crescent','Waxing Gibbous','Waning Gibbous','Waning Crescent'];
+const FULL=['Wolf','Snow','Worm','Pink','Flower','Strawberry','Buck','Sturgeon','Corn',"Hunter's",'Beaver','Cold'];
+const start=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+function phaseName(d){
+ const a=start(d),b=start(new Date(a+DAY*1.5));
+ const hit=events(a,b-1)[0];if(hit)return NAMES[hit.q];
+ const prev=events(a-DAY*10,a).pop();return BETWEEN[prev.q]}
+const waxing=ms=>mod(args(ms).D+6.289*sin(args(ms).P))<180;
+
+/* Moon art: fixed maria positions, lit side set by the phase (northern hemisphere view) */
+const MARIA=[[-.34,-.42,.27],[.12,-.38,.17],[.34,-.14,.2],[.55,.08,.14],[.68,-.3,.08],[-.55,-.05,.3],[-.4,.28,.15],[-.1,.45,.14],[.42,.28,.12],[0,-.12,.11]];
+function draw(cv,k,wax){
+ const x=cv.getContext('2d'),n=cv.width,c=n/2,r=n/2-1;x.clearRect(0,0,n,n);
+ const face=(lit)=>{
+  const g=x.createRadialGradient(c-r*.2,c-r*.25,r*.1,c,c,r);
+  g.addColorStop(0,lit?'#f6f7f9':'#262b34');g.addColorStop(1,lit?'#aab1bd':'#171a20');
+  x.fillStyle=g;x.fillRect(0,0,n,n);
+  // each sea is a cluster of soft blobs so the edges look irregular; the seed keeps it identical every draw
+  let q=7;const rnd=()=>(q=q*16807%2147483647)/2147483647;
+  const blob=(X,Y,s,a)=>{const m=x.createRadialGradient(X,Y,0,X,Y,s),col=lit?'72,80,96,':'0,0,0,';
+   m.addColorStop(0,'rgba('+col+a+')');m.addColorStop(.6,'rgba('+col+a*.6+')');m.addColorStop(1,'rgba('+col+'0)');
+   x.fillStyle=m;x.fillRect(X-s,Y-s,s*2,s*2)};
+  for(const[mx,my,mr]of MARIA)for(let i=0;i<14;i++){const an=rnd()*6.283,d=rnd()*mr*.85;
+   blob(c+(mx+Math.cos(an)*d)*r,c+(my+Math.sin(an)*d)*r,mr*r*(.25+rnd()*.4),.17)}
+  if(n>200)for(let i=0;i<170;i++){const an=rnd()*6.283,d=Math.sqrt(rnd())*r*.96,s=r*(.008+rnd()**3*.04),X=c+Math.cos(an)*d,Y=c+Math.sin(an)*d;
+   blob(X,Y,s,.2);if(lit){x.strokeStyle='rgba(255,255,255,.16)';x.lineWidth=1;x.beginPath();x.arc(X,Y,s*.6,0,2.2);x.stroke()}}
+  if(lit&&n>200){const X=c-r*.1,Y=c+r*.7;x.strokeStyle='rgba(255,255,255,.22)';x.lineWidth=1.5;
+   for(let a=0;a<360;a+=40){x.beginPath();x.moveTo(X,Y);x.lineTo(X+cos(a)*r*.28,Y+sin(a)*r*.28);x.stroke()}
+   x.fillStyle='#fff';x.beginPath();x.arc(X,Y,r*.03,0,7);x.fill()}
+ };
+ x.save();x.beginPath();x.arc(c,c,r,0,7);x.clip();face(false);
+ x.beginPath();
+ if(!wax){x.translate(n,0);x.scale(-1,1)}
+ x.arc(c,c,r+1,-Math.PI/2,Math.PI/2);
+ const w=1-2*k; // terminator half-width, positive bulges right (crescent)
+ x.ellipse(c,c,Math.abs(w)*r,r+1,0,Math.PI/2,-Math.PI/2,w>0);
+ x.closePath();
+ if(!wax){x.setTransform(1,0,0,1,0,0)}
+ x.clip();face(true);x.restore();
+}
+
+const $=s=>document.querySelector(s);
+let sel=new Date(),view='today',month=new Date(sel.getFullYear(),sel.getMonth(),1);
+const isToday=d=>start(d)===start(new Date());
+const time=t=>t?new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'None';
+const md=t=>new Date(t).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+function inDays(t){const n=Math.round((start(new Date(t))-start(new Date()))/DAY);return n===0?'Today':n===1?'Tomorrow':n>0?'In '+n+' days':-n+' days ago'}
+function label(e){return e.q===2?'Full '+FULL[new Date(e.t).getMonth()]+' Moon':NAMES[e.q]}
+function row(e){const b=document.createElement('button');b.className='row';
+ b.innerHTML='<canvas width="68" height="68"></canvas><span>'+label(e)+'<div class="s">'+md(e.t)+' at '+time(e.t)+'</div></span><span class="s">'+inDays(e.t)+'</span>';
+ draw(b.firstChild,[0,.5,1,.5][e.q],e.q<2);b.onclick=()=>{sel=new Date(e.t);show('today')};return b}
+function renderToday(){
+ // today shows this moment; other days show 9 PM
+ const at=isToday(sel)?Date.now():new Date(sel.getFullYear(),sel.getMonth(),sel.getDate(),21).getTime();
+ const k=illum(at);draw($('#moon'),k,waxing(at));
+ $('#pct').innerHTML=Math.round(k*100)+'<small>% lit</small>';$('#name').textContent=phaseName(sel);
+ $('#moon').setAttribute('aria-label',phaseName(sel));
+ const rs=riseSet(sel),news=events(at-32*DAY,at).filter(e=>e.q===0).pop(),fut=events(at,at+40*DAY),full=fut.find(e=>e.q===2);
+ const mi=Math.round(position(at).km*.621371/100)*100;
+ $('#stats').innerHTML=[['Moonrise',time(rs.rise),''],['Moonset',time(rs.set),''],['Moon age',((at-news.t)/DAY).toFixed(1)+' days','since new moon'],['Distance',mi.toLocaleString()+' mi',position(at).km<362000?'near perigee':position(at).km>401000?'near apogee':''],['Next full',md(full.t),inDays(full.t)],['Next new',md(fut.find(e=>e.q===0).t),inDays(fut.find(e=>e.q===0).t)]]
+  .map(([a,b,c])=>'<div class="card"><div class="k">'+a+'</div><div class="v">'+b+'</div><div class="s">'+c+'</div></div>').join('');
+ $('#next').replaceChildren(...events(at,at+31*DAY).slice(0,4).map(row));
+}
+function renderCal(){
+ $('#month').textContent=month.toLocaleDateString([],{month:'long',year:'numeric'});
+ const g=$('#grid');g.replaceChildren();
+ for(const d of 'SMTWTFS'){const e=document.createElement('div');e.className='dow';e.textContent=d;g.append(e)}
+ for(let i=0;i<month.getDay();i++)g.append(document.createElement('div'));
+ const y=month.getFullYear(),m=month.getMonth();
+ for(let d=1;d<=new Date(y,m+1,0).getDate();d++){
+  const day=new Date(y,m,d),at=new Date(y,m,d,21).getTime(),hit=events(start(day),new Date(y,m,d+1).getTime()-1)[0];
+  const b=document.createElement('button');b.innerHTML='<span>'+d+'</span><canvas width="68" height="68"></canvas>';
+  if(hit){b.classList.add('key');b.title=NAMES[hit.q]}
+  if(start(day)===start(sel))b.classList.add('on');
+  draw(b.lastChild,hit?[0,.5,1,.5][hit.q]:illum(at),hit?hit.q<2:waxing(at));
+  b.onclick=()=>{sel=day;show('today')};g.append(b)}
+}
+function renderYear(){$('#year').replaceChildren(...events(Date.now(),Date.now()+366*DAY).filter(e=>e.q%2===0).map(row))}
+function render(){
+ $('#date').textContent=sel.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+ ({today:renderToday,cal:renderCal,list:renderYear})[view]()}
+function show(v){view=v;if(v==='cal')month=new Date(sel.getFullYear(),sel.getMonth(),1);
+ for(const s of['today','cal','list'])$('#'+s).hidden=s!==v;
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();scrollTo(0,0)}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{sel=new Date(sel.getFullYear(),sel.getMonth(),sel.getDate()+ +b.dataset.d,12);render()});
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()+ +b.dataset.m,1);renderCal()});
+$('#now').onclick=()=>{sel=new Date();show('today')};
+// location picker, remembered on this device
+const pick=$('#place'),inApp=/; wv\)/.test(navigator.userAgent);
+PLACES.forEach((p,i)=>pick.add(new Option(p[0],i)));
+if(!inApp&&navigator.geolocation)pick.add(new Option('Use my location','me'));
+const keep=v=>{try{localStorage.setItem('place',JSON.stringify(v))}catch(e){}};
+function mine(v){if(!pick.querySelector('[value=saved]'))pick.add(new Option('My location','saved'));LAT=v[1];LON=v[2];pick.value='saved'}
+try{const v=JSON.parse(localStorage.getItem('place'));if(v){const i=PLACES.findIndex(p=>p[0]===v[0]);if(i>=0){[,LAT,LON]=PLACES[i];pick.value=i}else mine(v)}}catch(e){}
+let chosen=pick.value;
+pick.onchange=()=>{
+ if(pick.value==='me'){pick.value=chosen;navigator.geolocation.getCurrentPosition(g=>{const v=['My location',+g.coords.latitude.toFixed(2),+g.coords.longitude.toFixed(2)];mine(v);chosen='saved';keep(v);render()},()=>alert('Location was not available.'));return}
+ chosen=pick.value;if(chosen!=='saved'){const p=PLACES[chosen];[,LAT,LON]=p;keep(p)}else{try{mine(JSON.parse(localStorage.getItem('place')))}catch(e){}}render()};
+show('today');
+if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js');
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){const t=start(new Date());if(t!==last&&start(sel)===last)sel=new Date();last=t;render()}});
+let last=start(new Date());
+setInterval(()=>{const t=start(new Date());if(t!==last){if(start(sel)===last)sel=new Date();last=t;render()}else if(view==='today'&&isToday(sel))render()},6e5);
+</script>
+</body>
+</html>
